@@ -3,6 +3,10 @@ import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
 
+# Initialize counters and lists to track successes and failures
+download_count = 0
+failed_downloads = []
+
 def create_directory(path):
     """Helper function to create directories if they don't exist."""
     if not os.path.exists(path):
@@ -11,14 +15,17 @@ def create_directory(path):
 
 def download_play_image(img_url, play_name, path):
     """Helper function to download and save the play image."""
+    global download_count
     create_directory(path)  # Ensure the directory exists
     response = requests.get(img_url)
     if response.status_code == 200:
         img_path = os.path.join(path, f"{play_name}.png")
         with open(img_path, 'wb') as f:
             f.write(response.content)
+        download_count += 1
         print(f"Downloaded and saved image: {img_path}")  # Debug: Indicate when an image is downloaded and saved
     else:
+        failed_downloads.append(img_url)
         print(f"Failed to download image: {img_url}")  # Debug: Indicate if image download failed
 
 def traverse_playbook(base_url, current_url, current_path, visited=set()):
@@ -94,6 +101,16 @@ def main():
     starting_path = f'{school.capitalize()}_Offense_Playbook'
     create_directory(starting_path)  # Ensure the base directory is created
     traverse_playbook(base_url, base_url, starting_path)
+
+    # Print the summary of downloads
+    print("\nDownload Summary:")
+    print(f"Total images downloaded: {download_count}")
+    if failed_downloads:
+        print(f"Failed to download {len(failed_downloads)} images:")
+        for failed in failed_downloads:
+            print(f" - {failed}")
+    else:
+        print("All images downloaded successfully!")
 
 if __name__ == '__main__':
     main()
